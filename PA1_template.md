@@ -30,7 +30,7 @@ which summary is printed in html format.
 
 ```r
 ## Ignore missing values in the dataset
-DatasetOmitNAs <- na.omit(Dataset) 
+DatasetOmitNAs <- na.omit(Dataset)
 
 ## Agregate steps by date ignoring missing values
 StepsbyDayOmitNAs <- aggregate(DatasetOmitNAs$steps, by=list(day=DatasetOmitNAs$date), FUN=sum)
@@ -38,7 +38,7 @@ StepsbyDayOmitNAs <- aggregate(DatasetOmitNAs$steps, by=list(day=DatasetOmitNAs$
 ## Agregate steps by date
 names(StepsbyDayOmitNAs)[2] <- 'steps'
 
-#print summary of calculations 
+#print summary of calculations
 print(summary(StepsbyDayOmitNAs$steps))
 ```
 
@@ -48,19 +48,26 @@ print(summary(StepsbyDayOmitNAs$steps))
 ```
 
 
-### 2. If you do not understand the difference between a histogram and a barplot, research the difference between them. Make a histogram of the total number of steps taken each day
+### 2. If you do not understand the difference between a histogram and a barplot, 
+research the difference between them. Make a histogram of the total number of steps taken each day
 
-We use ggplot2 to print a very simple histogram with a 700 steps binwidth
+We use ggplot2 to print the histogram with a 700 steps binwidth and two vertical lines for the values of the Mean and the Median of the distribution
 
 ```r
 library(ggplot2)
 plot <- ggplot(data=StepsbyDayOmitNAs, aes(StepsbyDayOmitNAs$steps)) + 
-        geom_histogram(fill='steelblue', binwidth=700) +
-        labs(x = "Steps", y = "Number of days (frequency)", title = "Number of Steps")
+        geom_histogram(fill='steelblue', alpha=0.5, binwidth=700) +
+        labs(x = 'Steps', y = 'Number of days (frequency)', title = 'Number of Steps') +
+        geom_vline(aes(xintercept=mean(StepsbyDayOmitNAs$steps), color='Mean'),
+               linetype='dashed', size=1, alpha=0.5, show_guide=TRUE) +
+        geom_vline(aes(xintercept=median(StepsbyDayOmitNAs$steps), color='Median'),
+               linetype='dashed', size=1, alpha=0.5, show_guide=TRUE) +
+        scale_color_manual('Statistics', values = c('Mean' = 'red', 'Median' = 'green'))
+
 print(plot)
 ```
 
-![](PA1_template_files/figure-html/unnamed-chunk-3-1.png)\
+![](./PA1_template_files/figure-html/unnamed-chunk-3-1.png)\
 
 
 ### 3. Calculate and report the mean and median of the total number of steps taken per day
