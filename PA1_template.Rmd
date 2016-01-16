@@ -29,14 +29,11 @@ Dataset <- read.csv2(LocalCsvPath, sep = ",", colClasses=c('interval'='factor'))
 ### 1. Calculate the total number of steps taken per day
 We agregate the total number of steps by date, by adding all the steps registered 
 in an interval each day. Results are stored in column *steps* of data frame *StepsbyDayOmitNAs*, 
-which summary is printed in html format.
+which summary is printed.
 
 ```{r}
-## Ignore missing values in the dataset
-DatasetOmitNAs <- Dataset
-
 ## Agregate steps by date ignoring missing values
-StepsbyDayOmitNAs <- aggregate(DatasetOmitNAs$steps, by=list(day=DatasetOmitNAs$date), FUN=sum, na.rm=TRUE)
+StepsbyDayOmitNAs <- aggregate(Dataset$steps, by=list(day=Dataset$date), FUN=sum, na.rm=TRUE)
 
 ## Agregate steps by date
 names(StepsbyDayOmitNAs)[2] <- 'steps'
@@ -46,11 +43,12 @@ print(summary(StepsbyDayOmitNAs$steps))
 ```
 
 
-### 2. If you do not understand the difference between a histogram and a barplot, research the difference between them. Make a histogram of the total number of steps taken each day
+### 2. Make a histogram of the total number of steps taken each day
 
-We use ggplot2 to print the histogram with a 700 steps binwidth and two vertical lines for the values of the Mean and the Median of the distribution
+We use ggplot2 to print the histogram with a 700 steps binwidth and two vertical lines for the values of the Mean and the Median of the distribution. NA values are ommited.
 ```{r}
 
+## We calculate the values and store in variables for future use.
 MeanOmitNAs <- round(mean(StepsbyDayOmitNAs$steps),2)
 MedianOmitNAs <- round(median(StepsbyDayOmitNAs$steps),2)
 
@@ -64,11 +62,11 @@ plot1 <- ggplot(data=StepsbyDayOmitNAs, aes(StepsbyDayOmitNAs$steps)) +
                linetype='dashed', size=1, alpha=0.5, show_guide=TRUE) +
         scale_color_manual('Statistics', values = c('Mean (NAs ommited)' = 'red', 'Median (NAs ommited)' = 'green'))
 
-print(plot)
+print(plot1)
 ```
 
 
-### 3. Calculate and report the mean and median of the total number of steps taken per day. We calculate the values and store in variables for future use.
+### 3. Calculate and report the mean and median of the total number of steps taken per day. 
 
 #### Mean and median of the total number of steps taken per day
 ```{r}
@@ -86,7 +84,7 @@ print(MedianOmitNAs)
 ### 1. Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
 ```{r}
 ## Agregate steps by interval calculating the mean value and ignoring missing values
-MeanbyIntervalOmitNAs <- aggregate(DatasetOmitNAs$steps, by=list(interval=DatasetOmitNAs$interval), FUN=mean, na.rm=TRUE)
+MeanbyIntervalOmitNAs <- aggregate(Dataset$steps, by=list(interval=Dataset$interval), FUN=mean, na.rm=TRUE)
 names(MeanbyIntervalOmitNAs)[2] <- 'meansteps'
 
 ## Order the dataset by interval
@@ -120,7 +118,7 @@ print(NumberNAs)
 ### 2. Devise a strategy for filling in all of the missing values in the dataset. The strategy does not need to be sophisticated. For example, you could use the mean/median for that day, or the mean for that 5-minute interval, etc.
 
 We will use the mean for that 5-minute interval (*meansteps* column) to fill the NAs.
-First we will merge the original *Dataset* data frame with the *MeanbyInterval* data frame by the *interval* column so we can add a new column *meansteps*
+First we will merge the original *Dataset* data frame with the *MeanbyInterval* data frame by the *interval* column so we can add a new column *meansteps*.
 Then, we will replace the NAs value of the *steps* column with the value in *meansteps*.
 Finally we will remove the *meansteps* column
 
@@ -169,4 +167,53 @@ print(MedianFilled)
 
 print(MeanFilled)
 
+```
+As we can see in the graphs mean and median calculated from the dataset with the missing values filled with our stimation get closer values near the median of the original dataset.
+
+## Are there differences in activity patterns between weekdays and weekends?
+### 1. Create a new factor variable in the dataset with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day.
+
+We will use the dataset with the missing values filled for this part of the assignment.
+```{r}
+## Backup locale time settings
+temp <- Sys.getlocale("LC_TIME")
+
+## Set locale time settings to English GB
+Sys.setlocale("LC_TIME","en_GB.UTF-8")
+
+## New column with the value of weekday for the Dataset
+DatasetFilled$weekday <- weekdays(as.Date(DatasetFilled[,'date']))
+
+## if the weekday is Saturday or Sunday, we change the value to weekend
+DatasetFilled[DatasetFilled$weekday %in% c('Saturday','Sunday'),'weekday'] <- 'weekend'
+
+## if the weekday is not weekend we change the value to weekday
+DatasetFilled[!(DatasetFilled$weekday=='weekend'),'weekday'] <- 'weekday'
+
+## weekday needs to be a factor variable
+DatasetFilled$weekday <- as.factor(DatasetFilled$weekday)
+
+## switch back locale to initial value
+Sys.setlocale("LC_TIME",temp)
+
+## print the structure of the dataset
+str(DatasetFilled)
+```
+
+### 2. Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). See the README file in the GitHub repository to see an example of what this plot should look like using simulated data.
+The following plot represents the different pattern of the activity between weekdays and weekends
+```{r}
+## Agregate steps by interval calculating the average by interval and weekday type value and ignoring missing values
+MeanbyIntervalFilledWeekday <- aggregate(DatasetFilled$steps, by=list(interval=DatasetFilled$interval, weekday=DatasetFilled$weekday), FUN=mean, na.rm=TRUE)
+names(MeanbyIntervalFilledWeekday)[3] <- 'meansteps'
+
+## Order the dataset by interval
+MeanbyIntervalFilledWeekday <- MeanbyIntervalFilledWeekday[order(as.numeric(as.character(MeanbyIntervalFilledWeekday$interval))),]
+
+## print a line plot faceted by weekday type
+plot <- ggplot(data=MeanbyIntervalFilledWeekday, aes(x=as.numeric(as.character(interval)), y=meansteps)) + 
+    geom_line(color='steelblue') +
+    labs(x = "Interval", y = "Steps (average)", title = "Steps per interval averaged across all weekday days or weekend days") +
+    facet_wrap(~ weekday, nrow=2)
+print(plot)
 ```
